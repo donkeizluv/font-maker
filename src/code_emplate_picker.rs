@@ -1,7 +1,7 @@
 pub const IMPORTS: &str = r#"
 use anchor_lang::prelude::*;
 use crate::error::CustomProgramError;
-use super::{font_basic, CHARSET};
+use super::*;
 "#;
 
 pub const STYLE_ENUM_TEMP: &str = r#"

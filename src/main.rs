@@ -3,6 +3,7 @@ use code_template::{ARR_TEMP, HEIGHT_TEMP, PAT};
 use convert_case::{Case, Casing};
 use figrs::{Figlet, FigletOptions};
 use std::{
+    collections::HashSet,
     fs::{self, File},
     io::{BufWriter, Write},
     ops::RangeInclusive,
@@ -10,7 +11,6 @@ use std::{
 
 use crate::config::ALL_FONTS;
 
-const MIN_ASCII: u8 = 32;
 const MAX_ASCII: u8 = 126;
 
 const SPACE: u8 = 32;
@@ -26,7 +26,7 @@ fn main() {
     fs::remove_dir_all("output").unwrap();
     fs::create_dir("output").unwrap();
 
-    let all_char = (MIN_ASCII..=MAX_ASCII)
+    let all_char = (0..=MAX_ASCII)
         .into_iter()
         .map(|c| {
             if c == SPACE
@@ -39,13 +39,13 @@ fn main() {
             None
         })
         .collect::<Vec<Option<String>>>();
+    let mut bl: HashSet<String> = HashSet::new();
 
     for font in ALL_FONTS {
         let opt = FigletOptions {
             font: font.to_string(),
             ..FigletOptions::default()
         };
-
         let set = all_char
             .clone()
             .into_iter()
@@ -54,6 +54,38 @@ fn main() {
                 None => "".to_string(),
             })
             .collect::<Vec<String>>();
+
+        // check if all required bounds have char
+        if let Some(empty) = NUMBER_BOUND
+            .into_iter()
+            .find(|b| set.get(*b as usize).unwrap().is_empty())
+        {
+            println!("font: {} missing number: {} -> skip", font, empty);
+            bl.insert(font.to_string());
+            continue;
+        }
+        if let Some(empty) = UPPER_BOUND
+            .into_iter()
+            .find(|b| set.get(*b as usize).unwrap().is_empty())
+        {
+            println!("font: {} missing upper: {} -> skip", font, empty);
+            bl.insert(font.to_string());
+            continue;
+        }
+        if let Some(empty) = LOWER_BOUND
+            .into_iter()
+            .find(|b| set.get(*b as usize).unwrap().is_empty())
+        {
+            println!("font: {} missing lower: {} -> skip", font, empty);
+            bl.insert(font.to_string());
+            continue;
+        }
+
+        let max_char = set.iter().map(|c| c.len()).max().unwrap();
+
+        if max_char >= 400 {
+            println!("warning! font: {font} max size is: {max_char}");
+        }
 
         let max_height_idx = set
             .iter()
@@ -89,8 +121,12 @@ fn main() {
         let mut f = BufWriter::new(f);
         f.write_all(merged.as_bytes()).unwrap();
     }
+    let bl_filter_fonts = ALL_FONTS
+        .into_iter()
+        .filter(|f| !bl.contains(f.to_owned()))
+        .collect::<Vec<&str>>();
 
-    let all_fonts_conv = ALL_FONTS
+    let all_fonts_conv = bl_filter_fonts
         .iter()
         .map(|f| name_conv(f))
         .collect::<Vec<String>>();
