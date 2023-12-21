@@ -1,4 +1,4 @@
-pub const ALL_FONTS: [&str; 289] = [
+pub const ALL_FONTS: [&str; 288] = [
     "1Row",
     "3-D",
     "3D Diagonal",
@@ -94,7 +94,7 @@ pub const ALL_FONTS: [&str; 289] = [
     "Double Shorts",
     "Double",
     "Dr Pepper",
-    "Efti Chess",
+    // "Efti Chess",
     "Efti Font",
     "Efti Italic",
     "Efti Piti",

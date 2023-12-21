@@ -93,7 +93,6 @@ pub mod font_dot_matrix;
 pub mod font_double_shorts;
 pub mod font_double;
 pub mod font_dr_pepper;
-pub mod font_efti_chess;
 pub mod font_efti_font;
 pub mod font_efti_italic;
 pub mod font_efti_piti;

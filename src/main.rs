@@ -110,7 +110,6 @@ fn main() {
 
     let try_from_cases = style_enums
         .iter()
-        .map(|s| s.to_case(Case::Camel))
         .map(|s| format!("x if x == Style::{} as u16 => Ok(Style::{})", s, s))
         .collect::<Vec<String>>()
         .join(",\n")
@@ -118,7 +117,14 @@ fn main() {
 
     let picker_match = style_enums
         .iter()
-        .map(|s| format!("Style::{} => Ok(({}::HEIGHT, {}::SET))", s, s, s))
+        .zip(all_fonts_conv)
+        .map(|(e, c)| {
+            let filename = format!("font_{}", c);
+            format!(
+                "Style::{} => Ok(({}::HEIGHT, {}::SET))",
+                e, filename, filename
+            )
+        })
         .collect::<Vec<String>>()
         .join(",\n");
 

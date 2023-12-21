@@ -1,5 +1,5 @@
 
-pub const HEIGHT: usize = 3;
+pub const HEIGHT: u8 = 3;
 
 pub const SET: [&str; 127] = [
     "",
