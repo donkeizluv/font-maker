@@ -1,8 +1,5 @@
-use code_emplate_picker::{
-    IMPORTS, MAX_RANGE_TEMP, PICKER_TEMP, STYLE_ENUM_TEMP, TRY_FROM_IMPL_TEMP,
-};
+use code_emplate_picker::{IMPORTS, MAX_RANGE_TEMP, PICKER_TEMP};
 use code_template::{ARR_TEMP, HEIGHT_TEMP, PAT};
-use convert_case::{Case, Casing};
 use figrs::{Figlet, FigletOptions};
 use std::{
     collections::HashSet,
@@ -140,40 +137,22 @@ fn main() {
 
     let mod_content = import_mods.join("\n");
 
-    let style_enums = all_fonts_conv
-        .iter()
-        .map(|s| format!("Font {}", s.to_case(Case::UpperCamel)))
-        .map(|s| s.replace(" ", ""))
-        .collect::<Vec<String>>();
+    let max_type_idx = all_fonts_conv.len() - 1;
 
-    let last_enum = style_enums.last().unwrap();
-
-    let try_from_cases = style_enums
+    let mut picker_match = all_fonts_conv
         .iter()
-        .map(|s| format!("x if x == Style::{} as u32 => Ok(Style::{})", s, s))
-        .collect::<Vec<String>>()
-        .join(",\n")
-        + ",\n";
-
-    let picker_match = style_enums
-        .iter()
-        .zip(all_fonts_conv)
-        .map(|(e, c)| {
+        .enumerate()
+        .map(|(idx, c)| {
             let filename = format!("font_{}", c);
-            format!(
-                "Style::{} => Ok(({}::HEIGHT, {}::SET))",
-                e, filename, filename
-            )
+            format!("{idx} => Ok(({filename}::HEIGHT, &{filename}::SET))",)
         })
-        .collect::<Vec<String>>()
-        .join(",\n");
+        .collect::<Vec<String>>();
+    picker_match.push("\n _ => Err(CustomProgramError::InvalidStyle.into()),".to_string());
 
     let picker_content = [
         IMPORTS.to_string(),
-        STYLE_ENUM_TEMP.replace(PAT, &style_enums.join(",\n")),
-        MAX_RANGE_TEMP.replace(PAT, &last_enum),
-        TRY_FROM_IMPL_TEMP.replace(PAT, &try_from_cases),
-        PICKER_TEMP.replace(PAT, &picker_match),
+        MAX_RANGE_TEMP.replace(PAT, &max_type_idx.to_string()),
+        PICKER_TEMP.replace(PAT, &picker_match.join(",\n")),
     ]
     .join("\n");
 
