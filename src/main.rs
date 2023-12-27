@@ -55,6 +55,15 @@ fn main() {
             .collect::<Vec<String>>();
 
         // check if all required bounds have char
+        if let Some(empty) = [SPACE]
+            .into_iter()
+            .find(|b| set.get(*b as usize).unwrap().is_empty())
+        {
+            println!("font: {} missing SPACE: {} -> skip", font, empty);
+            bl.insert(font.to_string());
+            continue;
+        }
+
         if let Some(empty) = NUMBER_BOUND
             .into_iter()
             .find(|b| set.get(*b as usize).unwrap().is_empty())
