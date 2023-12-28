@@ -1,17 +1,18 @@
 pub const IMPORTS: &str = r#"
-use anchor_lang::prelude::*;
-use crate::error::CustomProgramError;
 use super::*;
 "#;
 
-pub const MAX_RANGE_TEMP: &str = r#"
-pub const MAX_RANGE: u32 = {$};
+pub const TOTAL_STYLES: &str = r#"
+pub const TOTAL_STYLES: u32 = {$};
 "#;
 
 pub const PICKER_TEMP: &str = r#"
-pub fn pick<'a>(style_idx: u32) -> Result<(u8, &'a [&'static str])> {
+pub fn pick<'a>(style_idx: u32) -> (u8, Box<dyn Fn(u8) -> &'static str>) {
     match style_idx {
         {$}
+
+        _ => panic!("unsupported style"),
     }
 }
+
 "#;

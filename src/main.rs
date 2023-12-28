@@ -1,5 +1,5 @@
-use code_emplate_picker::{IMPORTS, MAX_RANGE_TEMP, PICKER_TEMP};
-use code_template::{ARR_TEMP, HEIGHT_TEMP, PAT};
+use code_emplate_picker::{IMPORTS, PICKER_TEMP, TOTAL_STYLES};
+use code_template::{GET_CHAR_TEMP, HEIGHT_TEMP, PAT};
 use figrs::{Figlet, FigletOptions};
 use std::{
     collections::HashSet,
@@ -20,6 +20,7 @@ const LOWER_BOUND: RangeInclusive<u8> = 97..=122;
 mod code_emplate_picker;
 mod code_template;
 mod config;
+
 fn main() {
     // clean output
     fs::remove_dir_all("output").unwrap();
@@ -106,20 +107,35 @@ fn main() {
             .max()
             .unwrap();
 
-        let codegen = set
+        let chars_str = set
             .iter()
-            .map(|c| {
+            .enumerate()
+            .map(|(char_code, c)| {
                 if c.is_empty() {
-                    return format!("\n\"\",");
+                    return "".to_owned();
                 }
-                return format!("\nr#\"\n{}\"#,", c);
+                format!("const CHAR_{}: &str = r#\"\n{}\n\"#;", char_code, c)
             })
+            .filter(|c| !c.is_empty())
+            .collect::<Vec<String>>();
+
+        let get_char_fn = set
+            .iter()
+            .enumerate()
+            .map(|(char_code, c)| {
+                if c.is_empty() {
+                    return "".to_owned();
+                }
+                format!("{char_code} => CHAR_{char_code},")
+            })
+            .filter(|c| !c.is_empty())
             .collect::<Vec<String>>();
         let convention_name = name_conv(font);
 
         let merged = [
             HEIGHT_TEMP.replace(PAT, &max_height_idx.to_string()),
-            ARR_TEMP.to_string().replace(PAT, &codegen.concat()),
+            chars_str.join("\n"),
+            GET_CHAR_TEMP.replace(PAT, &get_char_fn.join("\n")),
         ]
         .concat();
 
@@ -148,20 +164,20 @@ fn main() {
 
     let max_type_idx = all_fonts_conv.len() - 1;
 
-    let mut picker_match = all_fonts_conv
+    let picker_match = all_fonts_conv
         .iter()
         .enumerate()
         .map(|(idx, c)| {
             let filename = format!("font_{}", c);
-            format!("{idx} => Ok(({filename}::HEIGHT, &{filename}::SET))",)
+            format!("{idx} => ({filename}::HEIGHT, Box::new(|idx: u8| {filename}::get_char(idx))),")
         })
         .collect::<Vec<String>>();
-    picker_match.push("\n _ => Err(CustomProgramError::InvalidStyle.into()),".to_string());
+    // picker_match.push("\n _ => Err(CustomProgramError::InvalidStyle.into()),".to_string());
 
     let picker_content = [
         IMPORTS.to_string(),
-        MAX_RANGE_TEMP.replace(PAT, &max_type_idx.to_string()),
-        PICKER_TEMP.replace(PAT, &picker_match.join(",\n")),
+        TOTAL_STYLES.replace(PAT, &max_type_idx.to_string()),
+        PICKER_TEMP.replace(PAT, &picker_match.join("\n")),
     ]
     .join("\n");
 
