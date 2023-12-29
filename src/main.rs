@@ -42,109 +42,9 @@ fn main() {
     let mut bl: HashSet<String> = HashSet::new();
 
     for font in ALL_FONTS {
-        let opt = FigletOptions {
-            font: font.to_string(),
-            ..FigletOptions::default()
-        };
-        let set = all_char
-            .clone()
-            .into_iter()
-            .map(|c| match c {
-                Some(code) => Figlet::text(code, opt.clone()).unwrap().text,
-                None => "".to_string(),
-            })
-            .collect::<Vec<String>>();
-
-        // check if all required bounds have char
-        if let Some(empty) = [SPACE]
-            .into_iter()
-            .find(|b| set.get(*b as usize).unwrap().is_empty())
-        {
-            println!("font: {} missing SPACE: {} -> skip", font, empty);
-            bl.insert(font.to_string());
-            continue;
-        }
-
-        if let Some(empty) = NUMBER_BOUND
-            .into_iter()
-            .find(|b| set.get(*b as usize).unwrap().is_empty())
-        {
-            println!("font: {} missing number: {} -> skip", font, empty);
-            bl.insert(font.to_string());
-            continue;
-        }
-        if let Some(empty) = UPPER_BOUND
-            .into_iter()
-            .find(|b| set.get(*b as usize).unwrap().is_empty())
-        {
-            println!("font: {} missing upper: {} -> skip", font, empty);
-            bl.insert(font.to_string());
-            continue;
-        }
-        if let Some(empty) = LOWER_BOUND
-            .into_iter()
-            .find(|b| set.get(*b as usize).unwrap().is_empty())
-        {
-            println!("font: {} missing lower: {} -> skip", font, empty);
-            bl.insert(font.to_string());
-            continue;
-        }
-
-        let max_char = set.iter().map(|c| c.len()).max().unwrap();
-
-        if max_char >= 400 {
-            println!("warning! font: {font} max size is: {max_char}");
-        }
-
-        let max_height_idx = set
-            .iter()
-            .map(|c| {
-                c.split("\n")
-                    .filter(|c| !c.is_empty())
-                    .collect::<Vec<&str>>()
-                    .len()
-            })
-            .max()
-            .unwrap();
-
-        let chars_str = set
-            .iter()
-            .enumerate()
-            .map(|(char_code, c)| {
-                if c.is_empty() {
-                    return "".to_owned();
-                }
-                format!("const CHAR_{}: &str = r#\"\n{}\n\"#;", char_code, c)
-            })
-            .filter(|c| !c.is_empty())
-            .collect::<Vec<String>>();
-
-        let get_char_fn = set
-            .iter()
-            .enumerate()
-            .map(|(char_code, c)| {
-                if c.is_empty() {
-                    return "".to_owned();
-                }
-                format!("{char_code} => CHAR_{char_code},")
-            })
-            .filter(|c| !c.is_empty())
-            .collect::<Vec<String>>();
-        let convention_name = name_conv(font);
-
-        let merged = [
-            HEIGHT_TEMP.replace(PAT, &max_height_idx.to_string()),
-            chars_str.join("\n"),
-            GET_CHAR_TEMP.replace(PAT, &get_char_fn.join("\n")),
-        ]
-        .concat();
-
-        let path = format!("output/font_{}.rs", convention_name);
-
-        let f = File::create(path).unwrap();
-        let mut f = BufWriter::new(f);
-        f.write_all(merged.as_bytes()).unwrap();
+        gen_font(font, &all_char, &mut bl)
     }
+
     let bl_filter_fonts = ALL_FONTS
         .into_iter()
         .filter(|f| !bl.contains(f.to_owned()))
@@ -195,4 +95,139 @@ fn name_conv(name: &str) -> String {
         .replace("-", "_")
         .replace(" ", "_")
         .replace("'", "")
+}
+
+fn gen_font(font: &str, all_char: &Vec<Option<String>>, bl: &mut HashSet<String>) {
+    println!("Font {}", font);
+    let opt = FigletOptions {
+        font: font.to_string(),
+        ..FigletOptions::default()
+    };
+    let set = all_char
+        .clone()
+        .into_iter()
+        .map(|c| match c {
+            Some(code) => Figlet::text(code, opt.clone()).unwrap().text,
+            None => "".to_string(),
+        })
+        .collect::<Vec<String>>();
+    // check if all required bounds have char
+    if let Some(empty) = [SPACE]
+        .into_iter()
+        .find(|b| set.get(*b as usize).unwrap().is_empty())
+    {
+        println!("font: {} missing SPACE: {} -> skip", font, empty);
+        bl.insert(font.to_string());
+        return;
+    }
+
+    if let Some(empty) = NUMBER_BOUND
+        .into_iter()
+        .find(|b| set.get(*b as usize).unwrap().is_empty())
+    {
+        println!("font: {} missing number: {} -> skip", font, empty);
+        bl.insert(font.to_string());
+        return;
+    }
+    if let Some(empty) = UPPER_BOUND
+        .into_iter()
+        .find(|b| set.get(*b as usize).unwrap().is_empty())
+    {
+        println!("font: {} missing upper: {} -> skip", font, empty);
+        bl.insert(font.to_string());
+        return;
+    }
+    if let Some(empty) = LOWER_BOUND
+        .into_iter()
+        .find(|b| set.get(*b as usize).unwrap().is_empty())
+    {
+        println!("font: {} missing lower: {} -> skip", font, empty);
+        bl.insert(font.to_string());
+        return;
+    }
+
+    let max_char = set.iter().map(|c| c.len()).max().unwrap();
+
+    if max_char >= 400 {
+        println!("warning! font: {font} max size is: {max_char}");
+    }
+
+    let max_height_idx = set
+        .iter()
+        .map(|c| {
+            c.split("\n")
+                .filter(|c| !c.is_empty())
+                .collect::<Vec<&str>>()
+                .len()
+        })
+        .max()
+        .unwrap();
+
+    let chars_str = set
+        .iter()
+        .enumerate()
+        .map(|(char_code, c)| {
+            if c.is_empty() {
+                return "".to_owned();
+            }
+
+            let byte_array = convert_byte_array_to_byte_array_as_string(c.as_bytes());
+            let byte_array_as_string: &str = byte_array.as_str();
+            convert_byte_array_as_string_to_string(byte_array_as_string);
+            format!(
+                "const CHAR_{}: &[u8] = {};",
+                char_code, byte_array_as_string
+            )
+        })
+        .filter(|c| !c.is_empty())
+        .collect::<Vec<String>>();
+
+    let get_char_fn = set
+        .iter()
+        .enumerate()
+        .map(|(char_code, c)| {
+            if c.is_empty() {
+                return "".to_owned();
+            }
+            format!("{char_code} => CHAR_{char_code},")
+        })
+        .filter(|c| !c.is_empty())
+        .collect::<Vec<String>>();
+    let convention_name = name_conv(font);
+
+    let merged = [
+        HEIGHT_TEMP.replace(PAT, &max_height_idx.to_string()),
+        chars_str.join("\n"),
+        GET_CHAR_TEMP.replace(PAT, &get_char_fn.join("\n")),
+    ]
+    .concat();
+
+    let path = format!("output/font_{}.rs", convention_name);
+
+    let f = File::create(path).unwrap();
+    let mut f = BufWriter::new(f);
+    f.write_all(merged.as_bytes()).unwrap();
+}
+
+fn convert_byte_array_to_byte_array_as_string(bytes: &[u8]) -> String {
+    let s: Vec<String> = bytes.iter().map(|b| format!("{}", b)).collect();
+    let result = s.join(", ");
+    format!("&[{}]", result)
+}
+
+fn convert_byte_array_as_string_to_string(s: &str) {
+    // Remove &[ and ], split by commas
+    let binding = s.replace("&[", "").replace("]", "");
+    let parts: Vec<&str> = binding.split(',').collect();
+
+    // Parse each part as a u8 and collect into a Vec<u8>
+    let bytes: Vec<u8> = parts
+        .iter()
+        .map(|part| part.trim().parse::<u8>().unwrap())
+        .collect();
+
+    // Convert Vec<u8> back into a String
+    let string = String::from_utf8(bytes).unwrap();
+
+    println!("{}", string);
 }
