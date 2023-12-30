@@ -1,4 +1,4 @@
-pub const ALL_FONTS: [&str; 237] = [
+pub const ALL_FONTS: [&str; 236] = [
     // "1Row",
     "3-D",
     "3D Diagonal",
@@ -230,7 +230,7 @@ pub const ALL_FONTS: [&str; 237] = [
     "Short",
     "Slant Relief",
     "Slant",
-    "Slide",
+    // "Slide",
     "Small Caps",
     "Small Isometric1",
     "Small Keyboard",
