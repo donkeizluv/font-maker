@@ -1,5 +1,5 @@
 use code_emplate_picker::{IMPORTS, PICKER_TEMP, TOTAL_STYLES};
-use code_template::{GET_CHAR_TEMP, HEIGHT_TEMP, PAT};
+use code_template::{GEN_COMMENT, GET_CHAR_TEMP, HEIGHT_TEMP, PAT};
 use figrs::{Figlet, FigletOptions};
 use std::{
     collections::HashSet,
@@ -132,7 +132,8 @@ fn main() {
             .collect::<Vec<String>>();
         let convention_name = name_conv(font);
 
-        let merged = [
+        let font_codegen = [
+            GEN_COMMENT.to_string(),
             HEIGHT_TEMP.replace(PAT, &max_height_idx.to_string()),
             chars_str.join("\n"),
             GET_CHAR_TEMP.replace(PAT, &get_char_fn.join("\n")),
@@ -143,7 +144,7 @@ fn main() {
 
         let f = File::create(path).unwrap();
         let mut f = BufWriter::new(f);
-        f.write_all(merged.as_bytes()).unwrap();
+        f.write_all(font_codegen.as_bytes()).unwrap();
     }
     let bl_filter_fonts = ALL_FONTS
         .into_iter()
@@ -157,10 +158,15 @@ fn main() {
 
     let import_mods = all_fonts_conv
         .iter()
-        .map(|f| format!("pub mod font_{};", f))
+        .map(|f| format!("mod font_{};", f))
         .collect::<Vec<String>>();
 
-    let mod_content = import_mods.join("\n");
+    let mod_codegen = vec![
+        vec![GEN_COMMENT.to_string(), "pub mod picker;".to_string()],
+        import_mods,
+    ]
+    .concat()
+    .join("\n");
 
     let max_type_idx = all_fonts_conv.len() - 1;
 
@@ -174,7 +180,8 @@ fn main() {
         .collect::<Vec<String>>();
     // picker_match.push("\n _ => Err(CustomProgramError::InvalidStyle.into()),".to_string());
 
-    let picker_content = [
+    let picker_codegen = [
+        GEN_COMMENT.to_string(),
         IMPORTS.to_string(),
         TOTAL_STYLES.replace(PAT, &max_type_idx.to_string()),
         PICKER_TEMP.replace(PAT, &picker_match.join("\n")),
@@ -183,11 +190,11 @@ fn main() {
 
     let f = File::create("output/mod.rs").unwrap();
     let mut f = BufWriter::new(f);
-    f.write_all(mod_content.as_bytes()).unwrap();
+    f.write_all(mod_codegen.as_bytes()).unwrap();
 
     let f = File::create("output/picker.rs").unwrap();
     let mut f = BufWriter::new(f);
-    f.write_all(picker_content.as_bytes()).unwrap();
+    f.write_all(picker_codegen.as_bytes()).unwrap();
 }
 
 fn name_conv(name: &str) -> String {

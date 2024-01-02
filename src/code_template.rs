@@ -8,7 +8,14 @@ pub fn get_char(char_code: u8) -> &'static str {
     match char_code {
          {$}
 
-        _ => panic!("usupported character"),
+        _ => panic!("unsupported character"),
     }
 }    
+"#;
+
+pub const GEN_COMMENT: &str = r#"
+/* 
+* This file is generated using font-maker
+* Do not modify manually
+*/
 "#;
