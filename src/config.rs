@@ -1,4 +1,4 @@
-pub const ALL_FONTS: [&str; 236] = [
+pub const ALL_FONTS: [&str; 235] = [
     // "1Row",
     "3-D",
     "3D Diagonal",
@@ -123,7 +123,7 @@ pub const ALL_FONTS: [&str; 236] = [
     "Goofy",
     "Gothic",
     "Graceful",
-    "Gradient",
+    // "Gradient",
     "Graffiti",
     "Greek",
     "Heart Left",
